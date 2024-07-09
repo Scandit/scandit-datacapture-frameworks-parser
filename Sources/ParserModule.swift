@@ -13,7 +13,7 @@ public enum ParserError: Error {
     case dataCaptureNotInitialized
 }
 
-open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObserver {
+public class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObserver {
     private let parserDeserializer: ParserDeserializer
     private var context: DataCaptureContext?
 
