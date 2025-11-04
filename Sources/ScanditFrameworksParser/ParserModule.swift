@@ -15,7 +15,7 @@ public enum ParserError: Error {
 
 open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObserver {
     private let parserDeserializer: ParserDeserializer
-    private var context: DataCaptureContext?
+    private let captureContext = DefaultFrameworksCaptureContext.shared
 
     public init(deserializer: ParserDeserializer = ParserDeserializer()) {
         self.parserDeserializer = deserializer
@@ -72,17 +72,13 @@ open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObse
             result.reject(error: error)
         }
     }
-
-    public func dataCaptureContext(deserialized context: DataCaptureContext?) {
-        self.context = context
-    }
-
+    
     public func didDisposeDataCaptureContext() {
         self.parsers.removeAll()
     }
 
     public func createOrUpdateParser(parserJson: String, result: FrameworksResult) {
-        guard let dcContext = context else {
+        guard let dcContext = captureContext.context else {
             result.reject(error: ParserError.dataCaptureNotInitialized)
             return
         }
