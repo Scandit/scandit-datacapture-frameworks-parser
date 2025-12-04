@@ -21,12 +21,8 @@ class ParseRequest {
     }
 
     static func decode(parsingData: String) -> ParseRequest {
-        guard let data = parsingData.data(using: .utf8),
-            let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
-        else {
-            return ParseRequest(parserId: "unknown", data: "")
-        }
-        return ParseRequest(json: json)
+        let jsonObject = try! JSONSerialization.jsonObject(with: Data(parsingData.utf8), options: []) as! [String: Any]
+        return ParseRequest(json: jsonObject)
     }
 
     private static func getParserId(_ json: [String: Any]) -> String {
@@ -42,6 +38,6 @@ class ParseRequest {
     }
 
     private static func getData(_ json: [String: Any]) -> String {
-        json["data"] as? String ?? ""
+        return json["data"] as? String ?? ""
     }
 }
