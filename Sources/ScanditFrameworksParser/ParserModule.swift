@@ -33,18 +33,22 @@ open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObse
         DeserializationLifeCycleDispatcher.shared.detach(observer: self)
     }
 
-    public func parse(parsingData: String, result: FrameworksResult) {
-        let request = ParseRequest.decode(parsingData: parsingData)
-        parse(string: request.data, id: request.parserId, result: result)
+    public func getDefaults() -> [String: Any?] {
+        [:]
     }
 
-    public func parse(string: String, id: String, result: FrameworksResult) {
-        guard let parser = parsers[id] else {
+    public func parse(parsingData: String, result: FrameworksResult) {
+        let request = ParseRequest.decode(parsingData: parsingData)
+        parseString(parserId: request.parserId, data: request.data, result: result)
+    }
+
+    public func parseString(parserId: String, data: String, result: FrameworksResult) {
+        guard let parser = parsers[parserId] else {
             result.reject(error: ParserError.componentNotFound)
             return
         }
         do {
-            let parserResult = try parser.parseString(string)
+            let parserResult = try parser.parseString(data)
             result.success(result: parserResult.jsonString)
         } catch {
             result.reject(error: error)
@@ -53,11 +57,11 @@ open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObse
 
     public func parseRawData(parsingData: String, result: FrameworksResult) {
         let request = ParseRequest.decode(parsingData: parsingData)
-        parse(data: request.data, id: request.parserId, result: result)
+        parseRawData(parserId: request.parserId, data: request.data, result: result)
     }
 
-    public func parse(data: String, id: String, result: FrameworksResult) {
-        guard let parser = parsers[id] else {
+    public func parseRawData(parserId: String, data: String, result: FrameworksResult) {
+        guard let parser = parsers[parserId] else {
             result.reject(error: ParserError.componentNotFound)
             return
         }
@@ -77,7 +81,7 @@ open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObse
         self.parsers.removeAll()
     }
 
-    public func createOrUpdateParser(parserJson: String, result: FrameworksResult) {
+    public func createUpdateNativeInstance(parserJson: String, result: FrameworksResult) {
         guard let dcContext = captureContext.context else {
             result.reject(error: ParserError.dataCaptureNotInitialized)
             return
@@ -94,6 +98,12 @@ open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObse
     public func disposeParser(parserId: String, result: FrameworksResult) {
         parsers.removeValue(forKey: parserId)
         result.success(result: nil)
+    }
+
+    public func createCommand(
+        _ method: any ScanditFrameworksCore.FrameworksMethodCall
+    ) -> (any ScanditFrameworksCore.BaseCommand)? {
+        ParserModuleCommandFactory.create(module: self, method)
     }
 }
 
