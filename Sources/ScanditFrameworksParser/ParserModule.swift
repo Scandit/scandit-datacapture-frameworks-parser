@@ -72,7 +72,7 @@ open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObse
             result.reject(error: error)
         }
     }
-    
+
     public func didDisposeDataCaptureContext() {
         self.parsers.removeAll()
     }
@@ -98,13 +98,17 @@ open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObse
 }
 
 extension ParserModule: ParserDeserializerDelegate {
-    public func parserDeserializer(_ parserDeserializer: ParserDeserializer,
-                                   didStartDeserializingParser parser: Parser,
-                                   from JSONValue: JSONValue) {}
+    public func parserDeserializer(
+        _ parserDeserializer: ParserDeserializer,
+        didStartDeserializingParser parser: Parser,
+        from jsonValue: JSONValue
+    ) {}
 
-    public func parserDeserializer(_ parserDeserializer: ParserDeserializer,
-                                   didFinishDeserializingParser parser: Parser,
-                                   from JSONValue: JSONValue) {
+    public func parserDeserializer(
+        _ parserDeserializer: ParserDeserializer,
+        didFinishDeserializingParser parser: Parser,
+        from jsonValue: JSONValue
+    ) {
         parsers[parser.componentId] = parser
     }
 }
