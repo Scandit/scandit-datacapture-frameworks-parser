@@ -56,6 +56,11 @@ open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObse
         }
     }
 
+    public func parseRawData(parsingData: String, result: FrameworksResult) {
+        let request = ParseRequest.decode(parsingData: parsingData)
+        parseRawData(parserId: request.parserId, data: request.data, result: result)
+    }
+
     public func parseRawData(parserId: String, data: String, result: FrameworksResult) {
         guard let parser = parsers[parserId] else {
             result.reject(error: ParserError.componentNotFound)
