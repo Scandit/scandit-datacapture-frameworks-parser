@@ -6,7 +6,6 @@
 
 import ScanditFrameworksCore
 import ScanditParser
-import ScanditParserDeserializer
 
 public enum ParserError: Error {
     case componentNotFound
@@ -16,7 +15,7 @@ public enum ParserError: Error {
 
 open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObserver {
     private let parserDeserializer: ParserDeserializer
-    private let captureContext = DefaultFrameworksCaptureContext.shared
+    private var context: DataCaptureContext?
 
     public init(deserializer: ParserDeserializer = ParserDeserializer()) {
         self.parserDeserializer = deserializer
@@ -34,30 +33,31 @@ open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObse
         DeserializationLifeCycleDispatcher.shared.detach(observer: self)
     }
 
-    public func getDefaults() -> [String: Any?] {
-        [:]
-    }
-
     public func parse(parsingData: String, result: FrameworksResult) {
         let request = ParseRequest.decode(parsingData: parsingData)
-        parseString(parserId: request.parserId, data: request.data, result: result)
+        parse(string: request.data, id: request.parserId, result: result)
     }
 
-    public func parseString(parserId: String, data: String, result: FrameworksResult) {
-        guard let parser = parsers[parserId] else {
+    public func parse(string: String, id: String, result: FrameworksResult) {
+        guard let parser = parsers[id] else {
             result.reject(error: ParserError.componentNotFound)
             return
         }
         do {
-            let parserResult = try parser.parseString(data)
+            let parserResult = try parser.parseString(string)
             result.success(result: parserResult.jsonString)
         } catch {
             result.reject(error: error)
         }
     }
 
-    public func parseRawData(parserId: String, data: String, result: FrameworksResult) {
-        guard let parser = parsers[parserId] else {
+    public func parseRawData(parsingData: String, result: FrameworksResult) {
+        let request = ParseRequest.decode(parsingData: parsingData)
+        parse(data: request.data, id: request.parserId, result: result)
+    }
+
+    public func parse(data: String, id: String, result: FrameworksResult) {
+        guard let parser = parsers[id] else {
             result.reject(error: ParserError.componentNotFound)
             return
         }
@@ -73,12 +73,16 @@ open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObse
         }
     }
 
+    public func dataCaptureContext(deserialized context: DataCaptureContext?) {
+        self.context = context
+    }
+
     public func didDisposeDataCaptureContext() {
         self.parsers.removeAll()
     }
 
-    public func createUpdateNativeInstance(parserJson: String, result: FrameworksResult) {
-        guard let dcContext = captureContext.context else {
+    public func createOrUpdateParser(parserJson: String, result: FrameworksResult) {
+        guard let dcContext = context else {
             result.reject(error: ParserError.dataCaptureNotInitialized)
             return
         }
@@ -95,26 +99,16 @@ open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObse
         parsers.removeValue(forKey: parserId)
         result.success(result: nil)
     }
-
-    public func createCommand(
-        _ method: any ScanditFrameworksCore.FrameworksMethodCall
-    ) -> (any ScanditFrameworksCore.BaseCommand)? {
-        ParserModuleCommandFactory.create(module: self, method)
-    }
 }
 
 extension ParserModule: ParserDeserializerDelegate {
-    public func parserDeserializer(
-        _ parserDeserializer: ParserDeserializer,
-        didStartDeserializingParser parser: Parser,
-        from jsonValue: JSONValue
-    ) {}
+    public func parserDeserializer(_ parserDeserializer: ParserDeserializer,
+                                   didStartDeserializingParser parser: Parser,
+                                   from JSONValue: JSONValue) {}
 
-    public func parserDeserializer(
-        _ parserDeserializer: ParserDeserializer,
-        didFinishDeserializingParser parser: Parser,
-        from jsonValue: JSONValue
-    ) {
+    public func parserDeserializer(_ parserDeserializer: ParserDeserializer,
+                                   didFinishDeserializingParser parser: Parser,
+                                   from JSONValue: JSONValue) {
         parsers[parser.componentId] = parser
     }
 }
