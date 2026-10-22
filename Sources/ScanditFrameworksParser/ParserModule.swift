@@ -34,15 +34,6 @@ open class ParserModule: NSObject, FrameworkModule, DeserializationLifeCycleObse
         DeserializationLifeCycleDispatcher.shared.detach(observer: self)
     }
 
-    public func getDefaults() -> [String: Any?] {
-        [:]
-    }
-
-    public func parse(parsingData: String, result: FrameworksResult) {
-        let request = ParseRequest.decode(parsingData: parsingData)
-        parseString(parserId: request.parserId, data: request.data, result: result)
-    }
-
     public func parseString(parserId: String, data: String, result: FrameworksResult) {
         guard let parser = parsers[parserId] else {
             result.reject(error: ParserError.componentNotFound)
