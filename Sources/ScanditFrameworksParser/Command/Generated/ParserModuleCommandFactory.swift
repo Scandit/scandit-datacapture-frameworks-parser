@@ -20,6 +20,7 @@ public class ParserModuleCommandFactory {
     /// - Parameter method: The method call containing method name and arguments
     /// - Returns: The corresponding command, or nil if method is not recognized
     public static func create(module: ParserModule, _ method: FrameworksMethodCall) -> ParserModuleCommand? {
+        _ = LogMetadata.registered
         switch method.method {
         case "parseString":
             return ParseStringCommand(module: module, method)
